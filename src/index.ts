@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import rateLimit from 'express-rate-limit';
 import morgan from 'morgan';
 import { connectDatabase } from './config/database';
+import videoRoutes from './routes/video.routes';
 
 dotenv.config();
 
@@ -47,6 +48,9 @@ app.use(limiter);
 app.get('/api/v1/health', (req: Request, res: Response) => {
   res.status(200).json({ status: 'OK', message: 'Story Generator API is healthy' });
 });
+
+// Routes
+app.use('/api/v1/video', videoRoutes);
 
 // Handle 404 for undefined routes
 app.use((req: Request, res: Response, next: NextFunction) => {
