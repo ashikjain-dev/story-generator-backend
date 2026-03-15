@@ -18,7 +18,7 @@
     "dotenv": "^17.3.1",
     "express": "^5.2.1",
     "express-rate-limit": "^8.3.1",
-    "mongoose": "^8.23.0",
+    "mongodb": "^6.21.0",
     "morgan": "^1.10.1"
   },
   "devDependencies": {

@@ -3,6 +3,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import rateLimit from 'express-rate-limit';
 import morgan from 'morgan';
+import { connectDatabase } from './config/database';
 
 dotenv.config();
 
@@ -43,7 +44,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(limiter);
 
 // Health Check API
-app.get('/health', (req: Request, res: Response) => {
+app.get('/api/v1/health', (req: Request, res: Response) => {
   res.status(200).json({ status: 'OK', message: 'Story Generator API is healthy' });
 });
 
@@ -55,7 +56,9 @@ app.use((req: Request, res: Response, next: NextFunction) => {
   });
 });
 
-// Start Server
-app.listen(port, () => {
-  console.log(`[server]: Server is running at http://localhost:${port}`);
+// Connect to MongoDB and Start Server
+connectDatabase().then(() => {
+  app.listen(port, () => {
+    console.log(`[server]: Server is running at http://localhost:${port}`);
+  });
 });
