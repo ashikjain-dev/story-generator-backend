@@ -5,11 +5,13 @@ import rateLimit from 'express-rate-limit';
 import morgan from 'morgan';
 import { connectDatabase } from './config/database';
 import videoRoutes from './routes/video.routes';
+import storyRoutes from './routes/story.routes';
 
 dotenv.config();
 
 const app: Express = express();
 const port = process.env.PORT || 3000;
+const apiVersion = '/api/v1';
 
 // Rate limiting setup
 const limiter = rateLimit({
@@ -45,12 +47,13 @@ app.use(express.urlencoded({ extended: true }));
 app.use(limiter);
 
 // Health Check API
-app.get('/api/v1/health', (req: Request, res: Response) => {
+app.get(`${apiVersion}/health`, (req: Request, res: Response) => {
   res.status(200).json({ status: 'OK', message: 'Story Generator API is healthy' });
 });
 
 // Routes
-app.use('/api/v1/video', videoRoutes);
+app.use(`${apiVersion}/video`, videoRoutes);
+app.use(`${apiVersion}/story`, storyRoutes);
 
 // Handle 404 for undefined routes
 app.use((req: Request, res: Response, next: NextFunction) => {
