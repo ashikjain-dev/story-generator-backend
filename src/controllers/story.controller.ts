@@ -1,7 +1,9 @@
 import { Request, Response } from 'express';
 import { generateStoryFromText } from '../services/ai.service';
-import { getDb } from '../config/database';
-
+import * as sessionService from '../services/session.service';
+/**
+ * Generates a creative story from text context and saves it to session history
+ */
 export const generateStory = async (req: Request, res: Response): Promise<void> => {
   const { context } = req.body;
 
@@ -14,43 +16,35 @@ export const generateStory = async (req: Request, res: Response): Promise<void> 
   }
 
   try {
-    console.log('[story-controller]: Generating story...');
-    const db = getDb();
-    const sessionCollection = db.collection('sessions');
     const sessionId = (req as any).sessionId;
 
-    // 1. Generate story using AI first
+    // 1. Generate story using AI (Must await this to get the content)
     const aiResponse = await generateStoryFromText(context);
 
-    // 2. Prepare the messages to push
-    const userMessage = {
-      role: 'user',
-      content: context,
-      timestamp: new Date()
-    };
-
-
-    const aiMessage = {
-      role: 'model',
-      title: aiResponse.title,
-      content: aiResponse.story,
-      timestamp: new Date()
-    };
-
-    // 3. Push both messages to the session's messages array
-    await sessionCollection.updateOne(
-      { sessionId },
+    // 2. Prepare message objects for the history
+    const historyMessages: sessionService.StoryMessage[] = [
       {
-        $push: {
-          stories: { $each: [userMessage, aiMessage] }
-        } as any
+        role: 'user',
+        content: context,
+        timestamp: new Date()
+      },
+      {
+        role: 'model',
+        title: aiResponse.title,
+        content: aiResponse.story,
+        timestamp: new Date()
       }
-    );
+    ];
 
-    // 4. Send response
+    // 3. --- Fire and Forget ---
+    // We send the story to the user IMMEDIATELY.
+    // The history save happens in the background.
+    sessionService.pushMessagesAsync(sessionId, historyMessages);
+
+    // 4. Send successful response
     res.status(200).json({
       status: 'OK',
-      message: 'Story generated and conversation updated!',
+      message: 'Story generated!',
       data: {
         sessionId,
         title: aiResponse.title,
@@ -59,7 +53,7 @@ export const generateStory = async (req: Request, res: Response): Promise<void> 
     });
 
   } catch (error: any) {
-    console.error('[story-controller]: Error', error);
+    console.error('[story-controller]: Generation Error', error);
     res.status(500).json({
       status: 'Error',
       message: error.message || 'An error occurred while generating your story.'
@@ -67,14 +61,13 @@ export const generateStory = async (req: Request, res: Response): Promise<void> 
   }
 };
 
+/**
+ * Retrieves the full story history for the current session
+ */
 export const getHistory = async (req: Request, res: Response): Promise<void> => {
-
-  const { sessionId } = req.params;
   try {
-    const db = getDb();
-    const sessionCollection = db.collection('sessions');
-
-    const session = await sessionCollection.findOne({ sessionId });
+    const sessionId = (req as any).sessionId;
+    const session = await sessionService.findSession(sessionId);
 
     if (!session) {
       res.status(404).json({
@@ -88,7 +81,7 @@ export const getHistory = async (req: Request, res: Response): Promise<void> => 
       status: 'OK',
       data: {
         sessionId: session.sessionId,
-        stories: session.stories
+        stories: session.stories || []
       }
     });
   } catch (error: any) {
