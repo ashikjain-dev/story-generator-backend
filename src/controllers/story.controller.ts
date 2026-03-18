@@ -14,29 +14,47 @@ export const generateStory = async (req: Request, res: Response): Promise<void> 
   }
 
   try {
-    // 1. Generate story using AI
+    console.log('[story-controller]: Generating story...');
+    const db = getDb();
+    const sessionCollection = db.collection('sessions');
+    const sessionId = (req as any).sessionId;
+
+    // 1. Generate story using AI first
     const aiResponse = await generateStoryFromText(context);
 
-    // 2. Store in MongoDB
-    const db = getDb();
-    const storyCollection = db.collection('stories');
-
-    const storyData = {
-      title: aiResponse.title,
-      content: aiResponse.story,
-      inputContext: context,
-      createdAt: new Date(),
+    // 2. Prepare the messages to push
+    const userMessage = {
+      role: 'user',
+      content: context,
+      timestamp: new Date()
     };
 
-    const result = await storyCollection.insertOne(storyData);
 
-    // 3. Send response
+    const aiMessage = {
+      role: 'model',
+      title: aiResponse.title,
+      content: aiResponse.story,
+      timestamp: new Date()
+    };
+
+    // 3. Push both messages to the session's messages array
+    await sessionCollection.updateOne(
+      { sessionId },
+      {
+        $push: {
+          stories: { $each: [userMessage, aiMessage] }
+        } as any
+      }
+    );
+
+    // 4. Send response
     res.status(200).json({
       status: 'OK',
-      message: 'Story generated and saved successfully!',
+      message: 'Story generated and conversation updated!',
       data: {
-        id: result.insertedId,
-        ...storyData
+        sessionId,
+        title: aiResponse.title,
+        story: aiResponse.story
       }
     });
 
@@ -45,6 +63,39 @@ export const generateStory = async (req: Request, res: Response): Promise<void> 
     res.status(500).json({
       status: 'Error',
       message: error.message || 'An error occurred while generating your story.'
+    });
+  }
+};
+
+export const getHistory = async (req: Request, res: Response): Promise<void> => {
+
+  const { sessionId } = req.params;
+  try {
+    const db = getDb();
+    const sessionCollection = db.collection('sessions');
+
+    const session = await sessionCollection.findOne({ sessionId });
+
+    if (!session) {
+      res.status(404).json({
+        status: 'Error',
+        message: 'Session not found.'
+      });
+      return;
+    }
+
+    res.status(200).json({
+      status: 'OK',
+      data: {
+        sessionId: session.sessionId,
+        stories: session.stories
+      }
+    });
+  } catch (error: any) {
+    console.error('[story-controller]: History Error', error);
+    res.status(500).json({
+      status: 'Error',
+      message: error.message || 'An error occurred while fetching history.'
     });
   }
 };

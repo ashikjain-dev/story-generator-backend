@@ -3,9 +3,11 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import rateLimit from 'express-rate-limit';
 import morgan from 'morgan';
+import cookieParser from 'cookie-parser';
 import { connectDatabase } from './config/database';
-import videoRoutes from './routes/video.routes';
-import storyRoutes from './routes/story.routes';
+import { sessionMiddleware } from './middlewares/session.middleware';
+import { storyRouter } from './routes/story.routes';
+import { videoRouter } from './routes/video.routes';
 
 dotenv.config();
 
@@ -44,6 +46,7 @@ app.use(morgan(':istDate -> :url -> :method -> :res[content-length] bytes and :r
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
 app.use(limiter);
 
 // Health Check API
@@ -51,9 +54,15 @@ app.get(`${apiVersion}/health`, (req: Request, res: Response) => {
   res.status(200).json({ status: 'OK', message: 'Story Generator API is healthy' });
 });
 
+
+// Global Session Middleware
+app.use(sessionMiddleware);
+
+
+
 // Routes
-app.use(`${apiVersion}/video`, videoRoutes);
-app.use(`${apiVersion}/story`, storyRoutes);
+app.use(`${apiVersion}/video`, videoRouter);
+app.use(`${apiVersion}/story`, storyRouter);
 
 // Handle 404 for undefined routes
 app.use((req: Request, res: Response, next: NextFunction) => {

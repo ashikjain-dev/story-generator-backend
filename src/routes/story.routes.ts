@@ -1,9 +1,11 @@
+import { generateStory, getHistory } from '../controllers/story.controller';
 import { Router } from 'express';
-import { generateStory } from '../controllers/story.controller';
-
-const router = Router();
+const storyRouter = Router();
 
 // POST /api/v1/story/generate
-router.post('/generate', generateStory);
+storyRouter.post('/generate', generateStory);
 
-export default router;
+// GET /api/v1/story/history
+storyRouter.get('/history/:sessionId', getHistory);
+
+export { storyRouter };
