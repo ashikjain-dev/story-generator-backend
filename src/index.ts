@@ -43,7 +43,10 @@ morgan.token('istDate', () => {
 
 // Middleware
 app.use(morgan(':istDate -> :url -> :method -> :res[content-length] bytes and :response-time ms'));
-app.use(cors());
+app.use(cors({
+  origin: 'http://localhost:5173',
+  credentials: true
+}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
