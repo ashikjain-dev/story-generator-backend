@@ -3,7 +3,7 @@ import { getDb } from '../config/database';
 export interface FeedbackInput {
   name?: string;
   rating: number;
-  comments: string;
+  comments?: string | undefined;
 }
 
 interface FeedbackDocument extends FeedbackInput {

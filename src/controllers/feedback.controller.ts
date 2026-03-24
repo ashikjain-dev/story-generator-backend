@@ -7,10 +7,10 @@ export const createFeedback = async (req: Request, res: Response): Promise<void>
   const { name, rating, comments } = req.body ?? {};
   const trimmedComments = typeof comments === 'string' ? comments.trim() : '';
 
-  if (rating === undefined || comments === undefined) {
+  if (rating === undefined) {
     res.status(400).json({
       status: 'Error',
-      message: '`rating` and `comments` are required.'
+      message: '`rating` is required.'
     });
     return;
   }
@@ -31,10 +31,10 @@ export const createFeedback = async (req: Request, res: Response): Promise<void>
     return;
   }
 
-  if (typeof comments !== 'string' || trimmedComments.length === 0) {
+  if (comments !== undefined && typeof comments !== 'string' ) {
     res.status(400).json({
       status: 'Error',
-      message: '`comments` is required and must be a non-empty string.'
+      message: '`comments` must be a string when provided.'
     });
     return;
   }
