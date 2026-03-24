@@ -8,6 +8,7 @@ import { connectDatabase } from './config/database';
 import { sessionMiddleware } from './middlewares/session.middleware';
 import { storyRouter } from './routes/story.routes';
 import { videoRouter } from './routes/video.routes';
+import { feedbackRouter } from './routes/feedback.routes';
 
 dotenv.config();
 
@@ -66,6 +67,7 @@ app.use(sessionMiddleware);
 // Routes
 app.use(`${apiVersion}/video`, videoRouter);
 app.use(`${apiVersion}/story`, storyRouter);
+app.use(`${apiVersion}/feedback`, feedbackRouter);
 
 // Handle 404 for undefined routes
 app.use((req: Request, res: Response, next: NextFunction) => {
